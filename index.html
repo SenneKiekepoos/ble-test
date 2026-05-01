@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sjoelbak Launcher</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    h1 { font-size: 24px; margin-bottom: 6px; color: #00d4ff; }
+    #status-balk { font-size: 13px; color: #aaa; margin-bottom: 20px; }
+    .kaart {
+      background: #16213e;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 16px;
+    }
+    .kaart h2 {
+      font-size: 15px;
+      color: #00d4ff;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .knop-rij { display: flex; gap: 10px; }
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:active  { opacity: 0.7; }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-reset    { background: #f39c12; color: #000; }
+    .btn-start    { background: #27ae60; color: #fff; }
+    .btn-stop     { background: #e74c3c; color: #fff; }
+    .btn-lanceer  { background: #00d4ff; color: #000; font-size: 18px; }
+    .btn-toch     { background: #e67e22; color: #fff; }
+    .btn-annuleer { background: #7f8c8d; color: #fff; }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .slider-waarde { text-align: center; font-size: 14px; color: #00d4ff; margin-top: 4px; }
+    #puck-indicator {
+      text-align: center;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+    .puck-ok       { background: #27ae60; color: #fff; }
+    .puck-nok      { background: #e74c3c; color: #fff; }
+    .puck-onbekend { background: #7f8c8d; color: #fff; }
+    #motor-status { text-align: center; font-size: 14px; color: #aaa; margin-top: 8px; }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .overlay.zichtbaar { display: flex; }
+    .popup-box {
+      background: #16213e;
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 88%;
+      max-width: 360px;
+      text-align: center;
+    }
+    .popup-box h3 { font-size: 18px; margin-bottom: 10px; color: #00d4ff; }
+    .popup-box p  { font-size: 14px; color: #aaa; margin-bottom: 20px; }
+    .popup-knop-rij { display: flex; gap: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🎯 Sjoelbak</h1>
+  <div id="status-balk">Verbinding maken...</div>
+
+  <div class="kaart">
+    <h2>Systeem</h2>
+    <div class="knop-rij">
+      <button class="btn-reset" onclick="stuurCommando('CMD:RESET')">Reset</button>
+      <button class="btn-start" onclick="stuurCommando('CMD:MOTOR_START')">Start motor</button>
+      <button class="btn-stop"  onclick="stuurCommando('CMD:MOTOR_STOP')">Stop motor</button>
+    </div>
+    <div id="motor-status">Motor: onbekend</div>
+  </div>
+
+  <div class="kaart">
+    <h2>Richten</h2>
+    <div class="slider-label">
+      <span>Links</span>
+      <span>Rechts</span>
+    </div>
+    <input type="range" id="slider-richt"
+      min="78" max="103" value="90"
+      oninput="richtingGewijzigd(this.value)">
+    <div class="slider-waarde" id="richt-waarde">Midden (90°)</div>
+  </div>
+
+  <div class="kaart">
+    <h2>Flywheel snelheid</h2>
+    <div class="slider-label">
+      <span>Traag</span>
+      <span>Snel</span>
+    </div>
+    <input type="range" id="slider-snelheid"
+      min="0" max="255" value="180"
+      oninput="snelheidGewijzigd(this.value)">
+    <div class="slider-waarde" id="snelheid-waarde">180 / 255</div>
+  </div>
+
+  <div class="kaart">
+    <h2>Puck status</h2>
+    <div id="puck-indicator" class="puck-onbekend">Onbekend</div>
+  </div>
+
+  <div class="kaart">
+    <button class="btn-lanceer" onclick="lanceerGedrukt()">🚀 LANCEER</button>
+  </div>
+
+  <div id="popup-geen-puck" class="overlay">
+    <div class="popup-box">
+      <h3>Geen puck!</h3>
+      <p>Er werd geen puck gedetecteerd. Wat wil je doen?</p>
+      <div class="popup-knop-rij">
+        <button class="btn-annuleer" onclick="sluitGeenPuckPopup()">Annuleer</button>
+        <button class="btn-toch"     onclick="lanceerToch()">Toch lanceren</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popup-bevestig" class="overlay">
+    <div class="popup-box">
+      <h3>Zeker lanceren?</h3>
+      <p>Druk op bevestigen om de puck te lanceren.</p>
+      <div class="popup-knop-rij">
+        <button class="btn-annuleer" onclick="sluitBevestiging()">Annuleer</button>
+        <button class="btn-lanceer"  onclick="bevestigLanceer()">Bevestigen</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let rxKenmerk = null;
+  let lanceerZonderCheckMode = false;
+
+  const SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
+  const RX_UUID      = "12345678-1234-1234-1234-123456789abd";
+  const TX_UUID      = "12345678-1234-1234-1234-123456789abe";
+
+  window.onload = () => verbindBluetooth();
+
+  async function verbindBluetooth() {
+    try {
+      document.getElementById('status-balk').textContent = "Verbinding zoeken...";
+      const apparaat = await navigator.bluetooth.requestDevice({
+        filters: [{ name: "Sjoelbak" }],
+        optionalServices: [SERVICE_UUID]
+      });
+      const server    = await apparaat.gatt.connect();
+      const service   = await server.getPrimaryService(SERVICE_UUID);
+      rxKenmerk       = await service.getCharacteristic(RX_UUID);
+      const txKenmerk = await service.getCharacteristic(TX_UUID);
+      await txKenmerk.startNotifications();
+      txKenmerk.addEventListener('characteristicvaluechanged', ontvangBericht);
+      document.getElementById('status-balk').textContent = "✅ Verbonden met Sjoelbak";
+      apparaat.addEventListener('gattserverdisconnected', () => {
+        document.getElementById('status-balk').textContent = "❌ Verbinding verbroken";
+      });
+    } catch (fout) {
+      document.getElementById('status-balk').textContent = "❌ Verbinding mislukt: " + fout;
+    }
+  }
+
+  async function stuurCommando(commando) {
+    if (!rxKenmerk) { alert("Niet verbonden!"); return; }
+    const encoder = new TextEncoder();
+    await rxKenmerk.writeValue(encoder.encode(commando));
+  }
+
+  function ontvangBericht(event) {
+    const bericht = new TextDecoder().decode(event.target.value);
+    if (bericht === "SENSOR:PUCK_AANWEZIG") {
+      const el = document.getElementById('puck-indicator');
+      el.textContent = "✅ Puck aanwezig";
+      el.className = "puck-ok";
+    } else if (bericht === "SENSOR:GEEN_PUCK") {
+      const el = document.getElementById('puck-indicator');
+      el.textContent = "❌ Geen puck";
+      el.className = "puck-nok";
+    }
+    if (bericht.startsWith("STATUS:MOTOR_AAN")) {
+      const snelheid = bericht.split(":")[2];
+      document.getElementById('motor-status').textContent = "Motor: AAN (snelheid: " + snelheid + ")";
+    } else if (bericht === "STATUS:MOTOR_UIT") {
+      document.getElementById('motor-status').textContent = "Motor: UIT";
+    }
+    if (bericht === "WAARSCHUWING:GEEN_PUCK") {
+      sluitBevestiging();
+      document.getElementById('popup-geen-puck').classList.add('zichtbaar');
+    }
+    if (bericht === "STATUS:KLAAR") {
+      sluitBevestiging();
+    }
+  }
+
+  let richtTimer = null;
+  function richtingGewijzigd(waarde) {
+    let label = "Midden (90°)";
+    if (waarde < 90) label = "Links (" + waarde + "°)";
+    if (waarde > 90) label = "Rechts (" + waarde + "°)";
+    document.getElementById('richt-waarde').textContent = label;
+    clearTimeout(richtTimer);
+    richtTimer = setTimeout(() => stuurCommando("CMD:RICHT:" + waarde), 200);
+  }
+
+  let snelheidTimer = null;
+  function snelheidGewijzigd(waarde) {
+    document.getElementById('snelheid-waarde').textContent = waarde + " / 255";
+    clearTimeout(snelheidTimer);
+    snelheidTimer = setTimeout(() => stuurCommando("CMD:SNELHEID:" + waarde), 200);
+  }
+
+  function lanceerGedrukt() {
+    lanceerZonderCheckMode = false;
+    document.getElementById('popup-bevestig').classList.add('zichtbaar');
+  }
+
+  function sluitBevestiging() {
+    document.getElementById('popup-bevestig').classList.remove('zichtbaar');
+  }
+
+  function bevestigLanceer() {
+    stuurCommando(lanceerZonderCheckMode ? "CMD:LANCEER_TOCH" : "CMD:LANCEER");
+  }
+
+  function sluitGeenPuckPopup() {
+    document.getElementById('popup-geen-puck').classList.remove('zichtbaar');
+  }
+
+  function lanceerToch() {
+    sluitGeenPuckPopup();
+    lanceerZonderCheckMode = true;
+    document.getElementById('popup-bevestig').classList.add('zichtbaar');
+  }
+</script>
+</body>
+</html>
