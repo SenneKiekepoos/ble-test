@@ -6,7 +6,6 @@
   <title>Sjoelbak Launcher</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: Arial, sans-serif;
       background: #1a1a2e;
@@ -17,20 +16,8 @@
       padding: 20px;
       min-height: 100vh;
     }
-
-    h1 {
-      font-size: 26px;
-      margin-bottom: 6px;
-      color: #00d4ff;
-      letter-spacing: 1px;
-    }
-
-    #status-balk {
-      font-size: 13px;
-      color: #aaa;
-      margin-bottom: 14px;
-    }
-
+    h1 { font-size: 26px; margin-bottom: 6px; color: #00d4ff; letter-spacing: 1px; }
+    #status-balk { font-size: 13px; color: #aaa; margin-bottom: 14px; }
     .btn-verbind {
       margin-bottom: 24px;
       padding: 14px 28px;
@@ -45,9 +32,7 @@
       max-width: 400px;
       transition: opacity 0.2s;
     }
-
     .btn-verbind:active { opacity: 0.7; }
-
     .kaart {
       background: #16213e;
       border-radius: 16px;
@@ -56,7 +41,6 @@
       max-width: 400px;
       margin-bottom: 16px;
     }
-
     .kaart h2 {
       font-size: 14px;
       color: #00d4ff;
@@ -64,9 +48,7 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-
     .knop-rij { display: flex; gap: 10px; }
-
     button {
       flex: 1;
       padding: 14px;
@@ -77,17 +59,13 @@
       cursor: pointer;
       transition: opacity 0.2s;
     }
-
-    button:active  { opacity: 0.7; }
-    button:disabled { opacity: 0.3; cursor: not-allowed; }
-
+    button:active { opacity: 0.7; }
     .btn-reset    { background: #f39c12; color: #000; }
     .btn-start    { background: #27ae60; color: #fff; }
     .btn-stop     { background: #e74c3c; color: #fff; }
     .btn-lanceer  { background: #00d4ff; color: #000; font-size: 18px; padding: 18px; }
     .btn-toch     { background: #e67e22; color: #fff; }
     .btn-annuleer { background: #7f8c8d; color: #fff; }
-
     .slider-label {
       display: flex;
       justify-content: space-between;
@@ -95,7 +73,6 @@
       color: #aaa;
       margin-bottom: 8px;
     }
-
     input[type=range] {
       -webkit-appearance: none;
       width: 100%;
@@ -105,7 +82,6 @@
       outline: none;
       cursor: pointer;
     }
-
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 22px;
@@ -114,7 +90,6 @@
       background: #00d4ff;
       cursor: pointer;
     }
-
     .slider-waarde {
       text-align: center;
       font-size: 14px;
@@ -122,7 +97,6 @@
       margin-top: 10px;
       font-weight: bold;
     }
-
     #puck-indicator {
       text-align: center;
       padding: 12px;
@@ -130,18 +104,10 @@
       font-weight: bold;
       font-size: 15px;
     }
-
     .puck-ok       { background: #27ae60; color: #fff; }
     .puck-nok      { background: #e74c3c; color: #fff; }
     .puck-onbekend { background: #2c3e50; color: #aaa; }
-
-    #motor-status {
-      text-align: center;
-      font-size: 13px;
-      color: #aaa;
-      margin-top: 10px;
-    }
-
+    #motor-status { text-align: center; font-size: 13px; color: #aaa; margin-top: 10px; }
     .overlay {
       display: none;
       position: fixed;
@@ -152,9 +118,7 @@
       align-items: center;
       z-index: 100;
     }
-
     .overlay.zichtbaar { display: flex; }
-
     .popup-box {
       background: #16213e;
       border-radius: 16px;
@@ -164,19 +128,8 @@
       text-align: center;
       border: 1px solid #0f3460;
     }
-
-    .popup-box h3 {
-      font-size: 18px;
-      margin-bottom: 10px;
-      color: #00d4ff;
-    }
-
-    .popup-box p {
-      font-size: 14px;
-      color: #aaa;
-      margin-bottom: 20px;
-    }
-
+    .popup-box h3 { font-size: 18px; margin-bottom: 10px; color: #00d4ff; }
+    .popup-box p  { font-size: 14px; color: #aaa; margin-bottom: 20px; }
     .popup-knop-rij { display: flex; gap: 10px; }
   </style>
 </head>
@@ -189,7 +142,6 @@
     🔵 Verbinden met Sjoelbak
   </button>
 
-  <!-- SYSTEEM -->
   <div class="kaart">
     <h2>Systeem</h2>
     <div class="knop-rij">
@@ -200,25 +152,23 @@
     <div id="motor-status">Motor: onbekend</div>
   </div>
 
-  <!-- RICHTEN -->
   <div class="kaart">
     <h2>Richten</h2>
     <div class="slider-label">
-      <span>← Links</span>
-      <span>Rechts →</span>
+      <span>← Links (0°)</span>
+      <span>Rechts (180°) →</span>
     </div>
     <input type="range" id="slider-richt"
-      min="78" max="103" value="90"
+      min="0" max="180" value="90"
       oninput="richtingGewijzigd(this.value)">
     <div class="slider-waarde" id="richt-waarde">Midden (90°)</div>
   </div>
 
-  <!-- SNELHEID -->
   <div class="kaart">
     <h2>Flywheel snelheid</h2>
     <div class="slider-label">
-      <span>Traag</span>
-      <span>Snel</span>
+      <span>Uit (0)</span>
+      <span>Max (255)</span>
     </div>
     <input type="range" id="slider-snelheid"
       min="0" max="255" value="180"
@@ -226,18 +176,15 @@
     <div class="slider-waarde" id="snelheid-waarde">180 / 255</div>
   </div>
 
-  <!-- PUCK STATUS -->
   <div class="kaart">
     <h2>Puck status</h2>
     <div id="puck-indicator" class="puck-onbekend">Onbekend</div>
   </div>
 
-  <!-- LANCEER -->
   <div class="kaart">
     <button class="btn-lanceer" onclick="lanceerGedrukt()">🚀 LANCEER</button>
   </div>
 
-  <!-- POPUP: geen puck -->
   <div id="popup-geen-puck" class="overlay">
     <div class="popup-box">
       <h3>⚠️ Geen puck!</h3>
@@ -249,7 +196,6 @@
     </div>
   </div>
 
-  <!-- POPUP: bevestiging -->
   <div id="popup-bevestig" class="overlay">
     <div class="popup-box">
       <h3>🚀 Zeker lanceren?</h3>
@@ -327,12 +273,10 @@
     }
   }
 
-  // Sliders met vertraging zodat BLE niet overspoeld wordt
   let richtTimer = null;
   function richtingGewijzigd(waarde) {
-    let label = "Midden (90°)";
-    if (waarde < 90) label = "Links (" + waarde + "°)";
-    if (waarde > 90) label = "Rechts (" + waarde + "°)";
+    let label = waarde + "°";
+    if (waarde == 90) label = "Midden (90°)";
     document.getElementById('richt-waarde').textContent = label;
     clearTimeout(richtTimer);
     richtTimer = setTimeout(() => stuurCommando("CMD:RICHT:" + waarde), 200);
@@ -345,7 +289,6 @@
     snelheidTimer = setTimeout(() => stuurCommando("CMD:SNELHEID:" + waarde), 200);
   }
 
-  // Lanceer flow
   function lanceerGedrukt() {
     lanceerZonderCheckMode = false;
     document.getElementById('popup-bevestig').classList.add('zichtbaar');
