@@ -1,3 +1,5 @@
+// --- WEBPAGINA ---
+const char webpagina[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -108,6 +110,19 @@
     .puck-nok      { background: #e74c3c; color: #fff; }
     .puck-onbekend { background: #2c3e50; color: #aaa; }
     #motor-status { text-align: center; font-size: 13px; color: #aaa; margin-top: 10px; }
+    #pin-invoer {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: #0f3460;
+      color: #fff;
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 10px;
+      letter-spacing: 8px;
+    }
+    #pin-status { text-align: center; margin-top: 10px; font-size: 13px; color: #aaa; }
     .overlay {
       display: none;
       position: fixed;
@@ -138,53 +153,67 @@
   <h1>🎯 Sjoelbak</h1>
   <div id="status-balk">Niet verbonden</div>
 
-  <button class="btn-verbind" onclick="verbindBluetooth()">
+  <button class="btn-verbind" id="verbind-knop" onclick="verbindBluetooth()">
     🔵 Verbinden met Sjoelbak
   </button>
 
-  <div class="kaart">
-    <h2>Systeem</h2>
-    <div class="knop-rij">
-      <button class="btn-reset" onclick="stuurCommando('CMD:RESET')">Reset</button>
-      <button class="btn-start" onclick="stuurCommando('CMD:MOTOR_START')">Start motor</button>
-      <button class="btn-stop"  onclick="stuurCommando('CMD:MOTOR_STOP')">Stop motor</button>
+  <!-- PIN KAART -->
+  <div class="kaart" id="pin-kaart" style="display:none;">
+    <h2>🔒 PIN Code</h2>
+    <input type="password" id="pin-invoer" maxlength="4" placeholder="• • • •">
+    <button class="btn-start" onclick="stuurPIN()">Bevestigen</button>
+    <div id="pin-status"></div>
+  </div>
+
+  <!-- HOOFDINTERFACE -->
+  <div id="hoofd-interface" style="display:none; width:100%; display:none;">
+
+    <div class="kaart">
+      <h2>Systeem</h2>
+      <div class="knop-rij">
+        <button class="btn-reset" onclick="stuurCommando('CMD:RESET')">Reset</button>
+        <button class="btn-start" onclick="stuurCommando('CMD:MOTOR_START')">Start motor</button>
+        <button class="btn-stop"  onclick="stuurCommando('CMD:MOTOR_STOP')">Stop motor</button>
+      </div>
+      <div id="motor-status">Motor: onbekend</div>
     </div>
-    <div id="motor-status">Motor: onbekend</div>
-  </div>
 
-  <div class="kaart">
-    <h2>Richten</h2>
-    <div class="slider-label">
-      <span>← Links (0°)</span>
-      <span>Rechts (180°) →</span>
+    <div class="kaart">
+      <h2>Richten</h2>
+      <div class="slider-label">
+        <span>← Links (0°)</span>
+        <span>Rechts (180°) →</span>
+      </div>
+      <input type="range" id="slider-richt"
+        min="0" max="180" value="90"
+        oninput="richtingGewijzigd(this.value)">
+      <div class="slider-waarde" id="richt-waarde">Midden (90°)</div>
     </div>
-    <input type="range" id="slider-richt"
-      min="0" max="180" value="90"
-      oninput="richtingGewijzigd(this.value)">
-    <div class="slider-waarde" id="richt-waarde">Midden (90°)</div>
-  </div>
 
-  <div class="kaart">
-    <h2>Flywheel snelheid</h2>
-    <div class="slider-label">
-      <span>Uit (0)</span>
-      <span>Max (255)</span>
+    <div class="kaart">
+      <h2>Flywheel snelheid</h2>
+      <div class="slider-label">
+        <span>Uit (0)</span>
+        <span>Max (255)</span>
+      </div>
+      <input type="range" id="slider-snelheid"
+        min="0" max="255" value="180"
+        oninput="snelheidGewijzigd(this.value)">
+      <div class="slider-waarde" id="snelheid-waarde">180 / 255</div>
     </div>
-    <input type="range" id="slider-snelheid"
-      min="0" max="255" value="180"
-      oninput="snelheidGewijzigd(this.value)">
-    <div class="slider-waarde" id="snelheid-waarde">180 / 255</div>
-  </div>
 
-  <div class="kaart">
-    <h2>Puck status</h2>
-    <div id="puck-indicator" class="puck-onbekend">Onbekend</div>
-  </div>
+    <div class="kaart">
+      <h2>Puck status</h2>
+      <div id="puck-indicator" class="puck-onbekend">Onbekend</div>
+    </div>
 
-  <div class="kaart">
-    <button class="btn-lanceer" onclick="lanceerGedrukt()">🚀 LANCEER</button>
-  </div>
+    <div class="kaart">
+      <button class="btn-lanceer" onclick="lanceerGedrukt()">🚀 LANCEER</button>
+    </div>
 
+  </div> <!-- einde hoofd-interface -->
+
+  <!-- POPUP: geen puck -->
   <div id="popup-geen-puck" class="overlay">
     <div class="popup-box">
       <h3>⚠️ Geen puck!</h3>
@@ -196,6 +225,7 @@
     </div>
   </div>
 
+  <!-- POPUP: bevestiging -->
   <div id="popup-bevestig" class="overlay">
     <div class="popup-box">
       <h3>🚀 Zeker lanceren?</h3>
@@ -228,14 +258,29 @@
       const txKenmerk = await service.getCharacteristic(TX_UUID);
       await txKenmerk.startNotifications();
       txKenmerk.addEventListener('characteristicvaluechanged', ontvangBericht);
-      document.getElementById('status-balk').textContent = "✅ Verbonden met Sjoelbak";
+      document.getElementById('status-balk').textContent = "✅ Verbonden – voer PIN in";
+      document.getElementById('verbind-knop').style.display = 'none';
+      document.getElementById('pin-kaart').style.display = 'block';
+
       apparaat.addEventListener('gattserverdisconnected', () => {
         document.getElementById('status-balk').textContent = "❌ Verbinding verbroken";
+        document.getElementById('verbind-knop').style.display = 'block';
+        document.getElementById('pin-kaart').style.display = 'none';
+        document.getElementById('hoofd-interface').style.display = 'none';
         rx = null;
       });
     } catch (fout) {
       document.getElementById('status-balk').textContent = "❌ Fout: " + fout;
     }
+  }
+
+  async function stuurPIN() {
+    const pin = document.getElementById('pin-invoer').value;
+    if (pin.length !== 4) {
+      document.getElementById('pin-status').textContent = "PIN moet 4 cijfers zijn!";
+      return;
+    }
+    await stuurCommando("PIN:" + pin);
   }
 
   async function stuurCommando(commando) {
@@ -245,6 +290,22 @@
 
   function ontvangBericht(event) {
     const bericht = new TextDecoder().decode(event.target.value);
+
+    if (bericht === "STATUS:PIN_OK") {
+      document.getElementById('pin-kaart').style.display = 'none';
+      document.getElementById('hoofd-interface').style.display = 'block';
+      document.getElementById('status-balk').textContent = "✅ Verbonden met Sjoelbak";
+      return;
+    }
+    if (bericht === "FOUT:PIN_FOUT") {
+      document.getElementById('pin-status').textContent = "❌ Foute PIN, probeer opnieuw!";
+      document.getElementById('pin-invoer').value = '';
+      return;
+    }
+    if (bericht === "FOUT:NIET_GEAUTHENTICEERD") {
+      document.getElementById('pin-status').textContent = "❌ Eerst PIN invoeren!";
+      return;
+    }
 
     if (bericht === "SENSOR:PUCK_AANWEZIG") {
       const el = document.getElementById('puck-indicator');
@@ -314,3 +375,4 @@
 </script>
 </body>
 </html>
+)rawliteral";
